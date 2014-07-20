@@ -3,6 +3,12 @@ WPDeworm
 
 Clean wormed (cracked/hacked) WordPress installation
 
+Requirments
+-----------
+
+* PHP 5 >= 5.2.0
+* cURL PHP extension
+
 Notes
 -----
 
