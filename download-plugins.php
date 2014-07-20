@@ -2,6 +2,7 @@
 /**
  * Created by PhpStorm.
  * User: Jan Čejka
+ * Site: http://jancejka.cz
  * Date: 17.7.14
  * Time: 21:49
  */
@@ -92,6 +93,10 @@ function download($url, $file) {
     return $ret;
 }
 
+
+// script start here
+
+set_time_limit(600);
 
 if( !file_exists($dwn_dir) ) {
     mkdir($dwn_dir);
