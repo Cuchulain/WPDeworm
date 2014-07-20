@@ -7,18 +7,18 @@
  * Time: 21:49
  */
 
-$vzory = array(
-    'jmeno' => '/^\s*Plugin Name:\s+(.+)$/im',
+$masks = array(
+    'name' => '/^\s*Plugin Name:\s+(.+)$/im',
     'url'   => '/^\s*Plugin URI:\s+(\S+)/im'
 );
 
 $dwn_dir = 'plugins-download';
 $dwn_url_mask = 'http://downloads.wordpress.org/plugin/%s.zip';
 
-function nactiHodnoty($obsah, $vzory) {
+function readValues($obsah, $masks) {
     $hodnoty = array();
 
-    foreach ($vzory as $vzor_nazev => $vzor_maska) {
+    foreach ($masks as $vzor_nazev => $vzor_maska) {
         $hodnoty[$vzor_nazev] = '';
         if( preg_match($vzor_maska, $obsah, $shody) === 1 ) {
             $hodnoty[$vzor_nazev] = $shody[1];
@@ -28,12 +28,12 @@ function nactiHodnoty($obsah, $vzory) {
     return $hodnoty;
 }
 
-function zpracujSoubor( $fullpath ) {
-    global $vzory;
+function processFile( $fullpath ) {
+    global $masks;
     global $dwn_dir, $dwn_url_mask;
 
     $obsah = file_get_contents($fullpath);
-    $hodnoty = nactiHodnoty($obsah, $vzory);
+    $hodnoty = readValues($obsah, $masks);
 
     if( $hodnoty['url'] != '') {
         $subdir = preg_replace('@^\.[/\\\\]@', '', dirname(dirname($fullpath)));
@@ -45,7 +45,7 @@ function zpracujSoubor( $fullpath ) {
             $localDir, $fileBaseName);
 
         echo(sprintf("<a href=\"%s\" target=\"_blank\">%s</a> : %s -&gt; %s\n<br />",
-            $hodnoty['url'], $hodnoty['jmeno'], dirname($fullpath), $localFilePath));
+            $hodnoty['url'], $hodnoty['name'], dirname($fullpath), $localFilePath));
 
         if( ($localDir != '') && !file_exists($localDir) ) {
             mkdir($localDir, 0777, true);
@@ -54,18 +54,22 @@ function zpracujSoubor( $fullpath ) {
         if( !file_exists($localFilePath) ) {
             download(sprintf($dwn_url_mask, $fileBaseName), $localFilePath);
         }
+        
+        if( extractFile($localFilePath, $localDir) ) {
+            unlink($localFilePath);
+        }
 
     }
 
 }
 
-function projdi($dir) {
+function processDir($dir) {
     $Directory = new RecursiveDirectoryIterator($dir);
     $Iterator = new RecursiveIteratorIterator($Directory);
     $Regex = new RegexIterator($Iterator, '/^.+\.php$/i', RecursiveRegexIterator::GET_MATCH);
 
     foreach( $Regex as $soubor ) {
-        zpracujSoubor($soubor[0]);
+        processFile($soubor[0]);
     }
 }
 
@@ -93,6 +97,17 @@ function download($url, $file) {
     return $ret;
 }
 
+function extractFile($file, $destination) {
+    $zip = new ZipArchive;
+    $res = $zip->open($file);
+    if ($res === TRUE) {
+        $zip->extractTo($destination);
+        $zip->close();
+        return true;
+    } else {
+        return false;
+    }
+}
 
 // script start here
 
@@ -102,5 +117,5 @@ if( !file_exists($dwn_dir) ) {
     mkdir($dwn_dir);
 }
 
-projdi('.');
+processDir('.');
 
